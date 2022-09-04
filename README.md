@@ -240,3 +240,28 @@ public UserRest getUser(@PathVariable String id, @AuthenticationPrincipal Jwt jw
 	return new UserRest("6203892e-e66e-42fd-b8b5-ca720ed5045c", "Name", "Lastname");
 }
 ```
+
+
+## Resource Servers Behind API Gateway
+Instead of hitting each microservice, an API Gateway can take the responsibility of detecting the requested resource and transfer it to the appropriate service for us.
+
+Spring Cloud Gateway features:
+- Built on Spring Framework 5, Project Reactor and Spring Boot 2.0
+- Able to match routes on any request attribute.
+- Predicates and filters are specific to routes.
+- Circuit Breaker integration.
+- Spring Cloud DiscoveryClient integration
+- Easy to write Predicates and Filters
+- Request Rate Limiting
+- Path Rewriting
+
+Add each MS and endpoint, in the `application.properties` file:
+
+```
+spring.cloud.gateway.routes[0].id = user-status-check
+spring.cloud.gateway.routes[0].uri = http://localhost:8081
+spring.cloud.gateway.routes[0].predicates[0] = Path=/users/status/check
+spring.cloud.gateway.routes[0].predicates[1] = Method=GET
+spring.cloud.gateway.routes[0].filters[0] = RemoveRequestHeader=Cookie
+```
+

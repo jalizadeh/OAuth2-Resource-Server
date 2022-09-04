@@ -140,7 +140,7 @@ Role is a collection of authorities
 
 In Spring Security:
 - Authoriry name = Role name = **ROLE_ADMIN**
-- hadRole("Admin")
+- hasRole("Admin")
 - hasAuthority("ROLE_ADMIN")
 
 |  ROLES  | AUTHORITIES  |
@@ -174,9 +174,9 @@ public class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedA
 		}
 		
 		Collection<GrantedAuthority> returnValue = ((List<String>) realmAccess.get("roles"))
-				.stream().map(roleName -> "ROLE_" + roleName)
-				.map(SimpleGrantedAuthority::new)
-				.collect(Collectors.toList());
+			.stream().map(roleName -> "ROLE_" + roleName)
+			.map(SimpleGrantedAuthority::new)
+			.collect(Collectors.toList());
 		
 		return returnValue;
 	}
@@ -188,18 +188,55 @@ This class is injected in the security configuration
 ```java
 //...
 JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
+jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
 		
-		http
-			.authorizeRequests()
-				.antMatchers(HttpMethod.GET, "/users/status/check")
-				//.hasAuthority("SCOPE_profile")
-				.hasRole("developer")
-				//.hasAuthority("ROLE_developer") //in case of using this cmd
-				//.hasAnyRole("developer", "user") //for multiple roles
-			.anyRequest().authenticated()
-			.and()
-			.oauth2ResourceServer()
-				.jwt()
-				.jwtAuthenticationConverter(jwtAuthenticationConverter);
+	http
+		.authorizeRequests()
+			.antMatchers(HttpMethod.GET, "/users/status/check")
+			//.hasAuthority("SCOPE_profile")
+			.hasRole("developer")
+			//.hasAuthority("ROLE_developer") //in case of using this cmd
+			//.hasAnyRole("developer", "user") //for multiple roles
+		.anyRequest().authenticated()
+		.and()
+		.oauth2ResourceServer()
+			.jwt()
+			.jwtAuthenticationConverter(jwtAuthenticationConverter);
+```
+
+## Resource Server: Method Level Security
+Methods can be secured solely by using "@Secured("ROLE_xxx")" annotation. To activate this feature, in the WebSecurity class, should be activated first. Also "@PreAuthorize("...")" and "@PostAuthorize("...")" can be activated here.
+
+```java
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
+@EnableWebSecurity
+public class WebSecurity extends WebSecurityConfigurerAdapter{
+```
+
+```java
+@Secured("ROLE_developer")
+@DeleteMapping(path="/{id}")
+public String deleteUser(@PathVariable String id) {
+	return "Deleted user with id: " + id;
+}
+```
+
+With "@PreAuthorize" it is possible to set logic using the values sent via the request. For example, **only** the *users with role "developer"* or *the owner of the logged in user*, can invoke this method:
+
+```java
+@PreAuthorize("hasAuthority('ROLE_developer') or #id == #jwt.subject")
+@DeleteMapping(path="/{id}")
+public String deleteUser(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
+	return "Deleted user with id: " + id + " / JWT subject: " + jwt.getSubject();
+}
+```
+
+"@PostAuthorize" will evaluate after method invocation.
+
+```java
+@PostAuthorize("returnObject.id == #jwt.subject")
+@GetMapping(path = "/{id}")
+public UserRest getUser(@PathVariable String id, @AuthenticationPrincipal Jwt jwt) {
+	return new UserRest("6203892e-e66e-42fd-b8b5-ca720ed5045c", "Name", "Lastname");
+}
 ```

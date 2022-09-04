@@ -265,3 +265,15 @@ spring.cloud.gateway.routes[0].predicates[1] = Method=GET
 spring.cloud.gateway.routes[0].filters[0] = RemoveRequestHeader=Cookie
 ```
 
+## Eureka Discovery Service
+Spring Cloud Netflix Eureka
+
+
+|  Service | Address  |
+| :------------ | :------------ |
+| Eureka Discovery Service  |  [http://localhost:8010](http://localhost:8010) |
+| API Gateway  |  [http://localhost:8010](http://localhost:8010) |
+| Authorization Server  |  [http://localhost:8080](http://localhost:8080) |
+| Resource Server  |  [http://localhost:8081](http://localhost:8081) |
+| Photos Server |  [http://localhost:8090](http://localhost:8090) |
+| Albums Server |  [http://localhost:8091](http://localhost:8091) |

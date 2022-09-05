@@ -265,15 +265,66 @@ spring.cloud.gateway.routes[0].predicates[1] = Method=GET
 spring.cloud.gateway.routes[0].filters[0] = RemoveRequestHeader=Cookie
 ```
 
-## Eureka Discovery Service
-Spring Cloud Netflix Eureka
+## Eureka (Spring Cloud Netflix) Discovery Service
+A Discovery Service is needed to let the clients to register themselves in it and all the requests are then transfered via this service.
+
+The Eureka service will run as **server**
+
+```
+@EnableEurekaServer
+@SpringBootApplication
+public class DiscoveryServiceApplication { ... }
+```
+
+While other clients, register themselves as register and point to the Discovery Service
+
+```java
+@EnableDiscoveryClient
+@SpringBootApplication
+public class ResourceServerApplication { ... }
+```
+
+In "application.properties":
+
+```
+spring.application.name=demo-resource-server
+eureka.client.serviceUrl.defaultZone = http://localhost:8010/eureka
+```
 
 
 |  Service | Address  |
 | :------------ | :------------ |
 | Eureka Discovery Service  |  [http://localhost:8010](http://localhost:8010) |
-| API Gateway  |  [http://localhost:8010](http://localhost:8010) |
+| API Gateway  |  [http://localhost:8082](http://localhost:8082) |
 | Authorization Server  |  [http://localhost:8080](http://localhost:8080) |
 | Resource Server  |  [http://localhost:8081](http://localhost:8081) |
 | Photos Server |  [http://localhost:8090](http://localhost:8090) |
 | Albums Server |  [http://localhost:8091](http://localhost:8091) |
+
+
+
+## Load Balancing
+Applications need to obtain the `port` dynamically
+
+```
+server.port=0
+```
+
+But with only the line above, Eureka will replace the **new_instance:new_port** with the old one. The solution is to have different **instanceId** for each instance
+
+
+```
+eureka.instance.instance-id=${spring.application.name}:${instanceId:${random.value}}
+```
+
+Or provide as a CLI parameter:
+
+```
+mvn spring-boot:run -Dspring-boot.run.arguments=--instanceId=javad
+```
+
+In API Gateway the endpoints are provided. When a client requests for a resource, the API Gateway recieves and will parse the resource's path and send the parsed request to Eureka (for load balancing between running Resource Servers). Order of running applications will be:
+
+1. Eureka Discovery (Discovery server)
+2. API Gateway (registers itself on Eureka)
+3. Any other Resource Server

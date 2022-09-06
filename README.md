@@ -3,7 +3,9 @@
 
 ## Introduction
 OAuth = Open Authorization
+
 OAuth 2.0 is an Authorization framework
+
 OAuth is a delegated authorization framework
 
 ### Client Type
@@ -328,3 +330,77 @@ In API Gateway the endpoints are provided. When a client requests for a resource
 1. Eureka Discovery (Discovery server)
 2. API Gateway (registers itself on Eureka)
 3. Any other Resource Server
+
+
+## OAuth 2.0 in MVC Web App
+The client needs dependencay [spring-boot-starter-oauth2-client](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-oauth2-client) and the configuration:
+
+```
+spring.security.oauth2.client.registration.mywebclient.client-id=photo-app-webclient
+spring.security.oauth2.client.registration.mywebclient.client-secret=<client-secret>
+spring.security.oauth2.client.registration.mywebclient.scope=openid, profile, roles
+spring.security.oauth2.client.registration.mywebclient.authorization-grant-type=authorization_code
+spring.security.oauth2.client.registration.mywebclient.redirect-uri=http://localhost:8087/login/oauth2/code/mywebclient
+
+#needed to contact the Authiorization Provider
+spring.security.oauth2.client.provider.mywebclient.authorization-uri=http://localhost:8080/realms/appsdeveloperblog/protocol/openid-connect/auth
+spring.security.oauth2.client.provider.mywebclient.token-uri=http://localhost:8080/realms/appsdeveloperblog/protocol/openid-connect/token
+spring.security.oauth2.client.provider.mywebclient.jwk-set-uri=http://localhost:8080/realms/appsdeveloperblog/protocol/openid-connect/certs
+spring.security.oauth2.client.provider.mywebclient.user-info-uri=http://localhost:8080/realms/appsdeveloperblog/protocol/openid-connect/userinfo
+spring.security.oauth2.client.provider.mywebclient.user-name-attribute=preferred_username
+```
+
+Opening the resource in the browser, will relocate to Keycloak's login page. On successful login, the `OidcUser` can be access in the backend:
+
+```
+Name: [javad], 
+Granted Authorities: [[ROLE_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]], 
+User Attributes: 
+[{
+	at_hash=xKt23M6B4PGWhG3TwCTTGg, 
+	sub=6203892e-e66e-42fd-b8b5-ca720ed5045c, 
+	email_verified=true, 
+	iss=http://localhost:8080/realms/appsdeveloperblog, 
+	typ=ID, 
+	preferred_username=javad, 
+	given_name=Javad, 
+	nonce=kIlcGmk7fgExzLun1BDV9uOXOzOR3iE7yvtj7cmz61I, 
+	sid=81bae54b-4369-4d74-a8e9-75d115228e1f, 
+	aud=[photo-app-webclient], 
+	acr=1, 
+	azp=photo-app-webclient, 
+	auth_time=2022-09-06T17:18:14Z, 
+	name=Javad Alizadeh, 
+	exp=2022-09-06T17:23:14Z, 
+	session_state=81bae54b-4369-4d74-a8e9-75d115228e1f, 
+	family_name=Alizadeh, 
+	iat=2022-09-06T17:18:14Z, 
+	email=javad@byom.de, 
+	jti=4d19a00b-103c-466c-a31a-a0d4a2eafaed
+}]
+
+Id Token:
+eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJEQTNOSm5mSHdpWFV1TER4VFJUamRXOTFDbWhlWDNsN0pCc0pkVzhWdmMwIn0.eyJleHAiOjE2NjI0ODY0ODIsImlhdCI6MTY2MjQ4NjE4MiwiYXV0aF90aW1lIjoxNjYyNDg2MTgyLCJqdGkiOiJhMTFhM2MwNy04Zjk5LTRmNGItYjViZS04YTg5YmZhYTgxODUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL2FwcHNkZXZlbG9wZXJibG9nIiwiYXVkIjoicGhvdG8tYXBwLXdlYmNsaWVudCIsInN1YiI6IjYyMDM4OTJlLWU2NmUtNDJmZC1iOGI1LWNhNzIwZWQ1MDQ1YyIsInR5cCI6IklEIiwiYXpwIjoicGhvdG8tYXBwLXdlYmNsaWVudCIsIm5vbmNlIjoiMWdaWHcyM19Db1JLd1dMUlZyck9fSUJlYmNyVDF5a0NvVC1jTUJpZTFucyIsInNlc3Npb25fc3RhdGUiOiIxNjk4ZTRjNi04ODhhLTQ3MGEtYThlMi02NDQ2ZTIwYmE3ZjkiLCJhdF9oYXNoIjoiMk92UFItb1QwOE5YSFdIQk5kU3lkQSIsImFjciI6IjEiLCJzaWQiOiIxNjk4ZTRjNi04ODhhLTQ3MGEtYThlMi02NDQ2ZTIwYmE3ZjkiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkphdmFkIEFsaXphZGVoIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiamF2YWQiLCJnaXZlbl9uYW1lIjoiSmF2YWQiLCJmYW1pbHlfbmFtZSI6IkFsaXphZGVoIiwiZW1haWwiOiJqYXZhZEBieW9tLmRlIn0.MMknrrwmBlLspbFB1KxJbuhY3zcderz0coh2r01FfETptUuSvSVXJCwxGYOXQ7T8sjvcfpejBuFbg7C21iu0ZITmb9TGts_Co7R5-OLLXJe_wuld97nnS_wwEgKM8ywSkaLsqZgaz90HgUthCs3hovnyxtY0kb4Gn5R2j5zDzSFSctGHGmgjFestRiqqUEc-4b_tlWjCp2bFY_BUF_tLTdqBaq6_XVkqekVNSldbBTXborH9AoYtf3vfytmA5OmkuTcm3lQdKSlSoiTguEYg2PLlMw8FMxFi0jxkkrX2Yf91ghuCiK97zKpRyYlQMUeQWPStlGiji4Eewddsbl-xSQ
+```
+
+To get the JWT Access Token and use it for later accesses:
+
+```java
+@Autowired
+OAuth2AuthorizedClientService  oauth2ClientService;
+	
+@Autowired
+RestTemplate restTemplate;
+	
+@GetMapping("/albums")
+public String getAlbums(Model model, @AuthenticationPrincipal OidcUser principal) {
+		
+	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+		
+	OAuth2AuthorizedClient oauth2Client = oauth2ClientService.loadAuthorizedClient(oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
+		
+	String jwtAccesstoken = oauth2Client.getAccessToken().getTokenValue();
+	System.out.println(jwtAccesstoken);
+```
+

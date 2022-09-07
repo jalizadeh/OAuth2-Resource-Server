@@ -404,3 +404,36 @@ public String getAlbums(Model model, @AuthenticationPrincipal OidcUser principal
 	System.out.println(jwtAccesstoken);
 ```
 
+Using the `WebClient` from Spring Web Reactive library, it is easier to send requests while the OAuth2 header is already included in the request's header. First define the bean that will inject the OAuth2 configuration.
+
+> Note: Never use this config to send request to third party services that can compromise the token.
+
+```java
+@Bean
+public WebClient webClient(ClientRegistrationRepository crr, OAuth2AuthorizedClientRepository ocr) {
+	ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2 = 
+		new ServletOAuth2AuthorizedClientExchangeFilterFunction(crr, ocr);
+
+	oauth2.setDefaultOAuth2AuthorizedClient(true);
+	return WebClient.builder().apply(oauth2.oauth2Configuration()).build();
+}
+```
+
+And the controller will be:
+
+```java
+@GetMapping("/albums")
+public String getAlbums(Model model, @AuthenticationPrincipal OidcUser principal) {
+		
+	//this address points to API Gateway and then, Albums service
+	String url = "http://localhost:8082/albums";
+		
+	List<AlbumRest> albums = webClient.get()
+		.uri(url)
+		.retrieve()
+		.bodyToMono(new ParameterizedTypeReference<List<AlbumRest>>() {})
+		.block();
+	model.addAttribute("albums",albums);
+	return "albums";
+}
+```

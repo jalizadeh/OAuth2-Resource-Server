@@ -437,3 +437,60 @@ public String getAlbums(Model model, @AuthenticationPrincipal OidcUser principal
 	return "albums";
 }
 ```
+
+
+## OAuth 2.0 - Social Login
+There are also other Authentication Services that can handle the user authentication, like: Google, Facebook, Okta, Github and etc.. Spring Security by default, has the configuration of them and only needs the credential of  the client on those services.
+
+For using different service providers, after creating the app in those services, fill up the needed data:
+
+```
+spring.security.oauth2.client.registration.google.client-id=
+spring.security.oauth2.client.registration.google.client-secret=
+
+#spring.security.oauth2.client.registration.facebook.client-id=
+#spring.security.oauth2.client.registration.facebook.client-secret=
+
+#spring.security.oauth2.client.registration.github.client-id=
+#spring.security.oauth2.client.registration.github.client-secret=
+
+#spring.security.oauth2.client.registration.okta.client-id=
+#spring.security.oauth2.client.registration.okta.client-secret=
+#spring.security.oauth2.client.registration.okta.scope=openid,profile
+#spring.security.oauth2.client.registration.okta.issuer-uri=https://<app-name>.okta.com/oauth2/default
+```
+
+Not that, the application needs also to let the user to logout. This can be added using Spring Security native "/logout" page. But not all services expire the token/session quickly after the user logs out.
+
+```java
+public class WebSecurity extends WebSecurityConfigurerAdapter{
+
+	@Autowired
+	ClientRegistrationRepository clientRegistrationRepository;
+	
+	@Override
+	protected void configure(HttpSecurity http) throws Exception{
+		http
+			.authorizeRequests()
+				.antMatchers("/").permitAll()
+			.anyRequest()
+				.authenticated()
+			.and()
+			.oauth2Login()
+			.and()
+			.logout()
+				//.logoutSuccessUrl("/")
+				.logoutSuccessHandler(oidcLogoutSuccessHandler())
+			.invalidateHttpSession(true)
+			.clearAuthentication(true)
+			.deleteCookies("JSESSIONID");
+	}
+	
+	private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler() {
+		OidcClientInitiatedLogoutSuccessHandler successHandler = 
+				new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
+		successHandler.setPostLogoutRedirectUri("http://localhost:8080");
+		return successHandler;
+	}
+}
+```
